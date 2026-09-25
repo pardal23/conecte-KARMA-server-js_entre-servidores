@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pesquisa Profunda GUI</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f8;
+      --sidebar-bg: #ffffff;
+      --main-bg: #ffffff;
+      --text-color: #333;
+      --border-color: #ddd;
+      --accent-color: #007bff;
+      --highlight-color: #ffeb3b;
+      --modal-overlay: rgba(0,0,0,0.5);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0; padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #2c3e50; color: white;
+      padding: 1rem 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 { margin: 0; font-size: 1.2rem; }
+    .status-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.85rem;
+    }
+    .app-container { display: flex; flex: 1; overflow: hidden; }
+    aside {
+      width: 320px; background: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex; flex-direction: column;
+      transition: transform 0.3s;
+    }
+    .sidebar-header {
+      padding: 1rem; border-bottom: 1px solid var(--border-color);
+      font-weight: 600; color: #444;
+    }
+    #files-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
+    .file-item {
+      padding: 0.7rem; border-bottom: 1px solid #eee;
+      cursor: pointer; display: flex; justify-content: space-between;
+      align-items: center; transition: background 0.15s;
+    }
+    .file-item:hover { background: #f0f4f8; }
+    .file-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    .file-meta { font-size: 0.8rem; color: #888; }
+    .match-count {
+      background: #ffca28; color: #333;
+      padding: 2px 6px; border-radius: 10px;
+      font-weight: bold; min-width: 24px; text-align: center;
+    }
+    main { flex: 1; background: var(--main-bg); display: flex; flex-direction: column; overflow: hidden; }
+    .controls-area {
+      padding: 1.2rem 1.5rem; background: #fff;
+      border-bottom: 1px solid var(--border-color);
+      display: grid; grid-template-columns: 1fr auto auto;
+      gap: 1rem; align-items: end;
+    }
+    @media (max-width: 768px) {
+      .controls-area { grid-template-columns: 1fr; }
+      aside { width: 250px; }
+    }
+    input[type="text"] {
+      width: 100%; padding: 0.65rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px; font-size: 1rem;
+    }
+    .control-group { display: flex; align-items: center; gap: 0.4rem; }
+    label { font-size: 0.9rem; cursor: pointer; }
+    button.primary {
+      background: var(--accent-color); color: white; border: none;
+      padding: 0.65rem 1.2rem; border-radius: 6px;
+      cursor: pointer; font-weight: 600;
+    }
+    button.primary:hover { background: #0056b3; }
+    .btn-upload {
+      background: #e0e0e0; color: #333; border: none;
+      padding: 0.65rem 1.2rem; border-radius: 6px; cursor: pointer;
+    }
+    .btn-upload:hover { background: #d0d0d0; }
+    #results-area { flex: 1; padding: 1.5rem; overflow-y: auto; }
+    .result-card {
+      border: 1px solid var(--border-color); border-radius: 8px;
+      padding: 1rem; margin-bottom: 1.2rem; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .result-header {
+      display: flex; justify-content: space-between;
+      align-items: baseline; margin-bottom: 0.6rem;
+    }
+    .result-title { font-size: 1.1rem; font-weight: 700; }
+    .result-stats { font-size: 0.9rem; color: #666; }
+    .snippet-block {
+      margin-top: 0.6rem; padding-top: 0.6rem;
+      border-top: 1px dashed #ccc;
+      line-height: 1.6; color: #444;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .snippet-pos { font-size: 0.78rem; color: #999; margin-bottom: 0.15rem; }
+    .highlight {
+      background-color: var(--highlight-color);
+      font-weight: bold; padding: 0.1em 0.2em; border-radius: 2px;
+    }
+    a.open-file-link {
+      color: var(--accent-color); text-decoration: none;
+      font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-top: 0.5rem; font-size: 0.95rem;
+    }
+    a.open-file-link:hover { text-decoration: underline; }
+    #modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--modal-overlay); z-index: 1000;
+      display: none; justify-content: center; align-items: center;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    #modal-overlay.visible { display: flex; opacity: 1; }
+    #modal-window {
+      background: white; width: 90%; max-width: 800px; max-height: 85vh;
+      border-radius: 8px; display: flex; flex-direction: column;
+      position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      padding: 1rem 1.5rem; border-bottom: 1px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fafafa; border-top-left-radius: 8px; border-top-right-radius: 8px;
+    }
+    .modal-title { margin: 0; font-size: 1.1rem; }
+    .close-modal {
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; color: #888;
+    }
+    .close-modal:hover { color: #333; }
+    .modal-body {
+      padding: 1.5rem; flex: 1; overflow-y: auto;
+      font-family: "Courier New", monospace;
+      font-size: 0.9rem; line-height: 1.4;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .modal-footer {
+      padding: 0.8rem 1.5rem; border-top: 1px solid #eee;
+      text-align: right; background: #fafafa;
+      border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;
+    }
+    #drop-zone {
+      border: 2px dashed var(--border-color); padding: 2rem;
+      text-align: center; color: #999; border-radius: 8px;
+      margin: 0.5rem 0.5rem 1rem; cursor: pointer;
+    }
+    #drop-zone.drag-over {
+      border-color: var(--accent-color); color: var(--accent-color);
+      background: rgba(0,123,255,0.05);
+    }
+    .options-bar {
+      display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;
+    }
+    .no-results { color: #999; font-style: italic; padding: 1rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🔍 Pesquisa Profunda (GUI)</h1>
+    <div class="status-badge" id="status-badge">0 ficheiros carregados</div>
+  </header>
+
+  <div class="app-container">
+    <aside id="sidebar">
+      <div class="sidebar-header">Arquivos carregados</div>
+      <div id="drop-zone">
+        📁 Arraste ficheiros aqui ou clique para selecionar<br/>
+        <small>TXT, MD, HTML, JSON, LOG, PY, JS, etc.</small>
+      </div>
+      <div id="files-list"></div>
+    </aside>
+
+    <main>
+      <div class="controls-area">
+        <div>
+          <input type="text" id="query" placeholder="Consulta (palavra, regex, etc.)" onkeydown="if(event.key==='Enter')performSearch()" />
+        </div>
+        <div class="options-bar">
+          <label class="control-group"><input type="checkbox" id="opt-whole-word" /> Palavra inteira</label>
+          <label class="control-group"><input type="checkbox" id="opt-case-sensitive" /> Aa (Case)</label>
+          <label class="control-group"><input type="checkbox" id="opt-regex" /> Regex</label>
+        </div>
+        <div style="display: flex; gap: 0.8rem;">
+          <button type="button" class="btn-upload" onclick="document.getElementById('file-input').click()">📂 Selecionar</button>
+          <button type="button" class="primary" onclick="performSearch()">Pesquisar</button>
+        </div>
+      </div>
+
+      <input type="file" id="file-input" multiple accept=".txt,.md,.html,.csv,.json,.log,.py,.js,.css,.xml,.yaml,.sql" style="display:none" />
+
+      <div id="results-area"></div>
+    </main>
+  </div>
+
+  <div id="modal-overlay">
+    <div id="modal-window">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Visualização</h3>
+        <button type="button" class="close-modal" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn-upload" onclick="copyContent()">📋 Copiar conteúdo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const files = []; // { name, content, size, id }
+    let currentModalFileId = null;
+
+    // ========== EVENT LISTENERS ==========
+
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+
+    fileInput.addEventListener('change', handleFiles, false);
+
+    dropZone.addEventListener('click', () => {
+      document.getElementById('file-input').click();
+    }, false);
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    }, false);
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+    }, false);
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) {
+        handleFiles({ target: { files: e.dataTransfer.files } });
+      }
+    }, false);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const overlay = document.getElementById('modal-overlay');
+        if (overlay.classList.contains('visible')) closeModal();
+      }
+    });
+
+    // ========== FILE HANDLING ==========
+
+    function handleFiles(e) {
+      const inputFiles = e.target.files;
+      for (let i = 0; i < inputFiles.length; i++) {
+        const file = inputFiles[i];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          files.push({
+            name: file.name,
+            content: event.target.result,
+            size: file.size,
+            id: Date.now() + i
+          });
+          updateStats();
+          renderFilesList();
+        };
+        reader.readAsText(file, 'utf-8');
+      }
+      e.target.value = '';
+    }
+
+    function updateStats() {
+      document.getElementById('status-badge').textContent = `${files.length} ficheiros carregados`;
+    }
+
+    function renderFilesList() {
+      const list = document.getElementById('files-list');
+      list.innerHTML = '';
+      files.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.onclick = () => openFileInModal(f.id);
+        div.innerHTML = `
+          <span class="file-name">📄 ${escapeHtml(f.name)}</span>
+          <span class="file-meta">
+            ${formatSize(f.size)} • <span class="match-count" id="count-${f.id}">0</span>
+          </span>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // ========== SEARCH ENGINE ==========
+
+    function performSearch() {
+      const query = document.getElementById('query').value.trim();
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      if (!query || files.length === 0) {
+        resultsDiv.innerHTML = '<p class="no-results">Digite uma consulta e carregue arquivos primeiro.</p>';
+        return;
+      }
+
+      const useWholeWord = document.getElementById('opt-whole-word').checked;
+      const caseSensitive = document.getElementById('opt-case-sensitive').checked;
+      const isRegex = document.getElementById('opt-regex').checked;
+
+      // Constrói o padrão de pesquisa
+      let flags = caseSensitive ? 'g' : 'gi';
+      let patternStr = query;
+
+      if (!isRegex) {
+        patternStr = escapeRegExp(query);
+      }
+      if (useWholeWord) {
+        patternStr = '\\b' + patternStr + '\\b';
+      }
+
+      let pattern;
+      try {
+        pattern = new RegExp(patternStr, flags);
+      } catch (e) {
+        resultsDiv.innerHTML = `<p class="no-results">Erro na expressão regular: ${escapeHtml(e.message)}</p>`;
+        return;
+      }
+
+      const allMatches = [];
+      const MAX_SNIPPETS = 15;
+
+      files.forEach((file) => {
+        // Reseta contador visual
+        const countEl = document.getElementById('count-' + file.id);
+        if (countEl) countEl.textContent = '0';
+
+        // Encontra todas as ocorrências
+        let count = 0;
+        const snippets = [];
+        const re = new RegExp(pattern.source, pattern.flags);
+
+        let match;
+        while ((match = re.exec(file.content)) !== null) {
+          count++;
+          // Extrai snippet com contexto
+          const contextSize = 80;
+          const start = Math.max(0, match.index - contextSize);
+          const end = Math.min(file.content.length, match.index + match[0].length + contextSize);
+          let snippet = file.content.substring(start, end).replace(/\n/g, ' ');
+          if (start > 0) snippet = '... ' + snippet;
+          if (end < file.content.length) snippet += ' ...';
+
+          if (snippets.length < MAX_SNIPPETS) {
+            snippets.push({
+              position: match.index,
+              text: snippet,
+              matched: match[0]
+            });
+          }
+
+          // Proteção contra zero-length match (loop infinito)
+          if (match.index === re.lastIndex) re.lastIndex++;
+        }
+
+        if (count > 0) {
+          allMatches.push({ file, count, snippets });
+          if (countEl) countEl.textContent = count;
+        }
+      });
+
+      // Ordena por relevância (mais ocorrências primeiro)
+      allMatches.sort((a, b) => b.count - a.count);
+
+      if (allMatches.length === 0) {
+        resultsDiv.innerHTML = '<p class="no-results">Nenhum resultado encontrado.</p>';
+      } else {
+        allMatches.forEach(m => {
+          const card = document.createElement('div');
+          card.className = 'result-card';
+
+          // Constroi HTML dos snippets
+          let snippetsHtml = '';
+          m.snippets.forEach((s, i) => {
+            snippetsHtml += `
+              <div class="snippet-block">
+                <div class="snippet-pos">📍 Posição: ${s.position} • Match: "${escapeHtml(s.matched)}"</div>
+                ${highlight(s.text, pattern)}
+              </div>
+            `;
+          });
+
+          // Avisa se há mais ocorrências não mostradas
+          let extraNote = '';
+          if (m.count > MAX_SNIPPETS) {
+            extraNote = `<div style="margin-top:0.5rem; color:#888; font-size:0.85rem;">+${m.count - MAX_SNIPPETS} ocorrência(s) não mostradas — abra o ficheiro para ver todas.</div>`;
+          }
+
+          card.innerHTML = `
+            <div class="result-header">
+              <span class="result-title">📄 ${escapeHtml(m.file.name)}</span>
+              <span class="result-stats">${m.count} ocorrência(s)</span>
+            </div>
+            <a class="open-file-link" onclick="openFileInModal(${m.file.id})">
+              🔗 Abrir ficheiro completo
+            </a>
+            ${snippetsHtml}
+            ${extraNote}
+          `;
+          resultsDiv.appendChild(card);
+        });
+      }
+    }
+
+    // ========== MODAL ==========
+
+    function openFileInModal(fileId) {
+      const file = files.find(f => f.id === fileId);
+      if (!file) return;
+      currentModalFileId = fileId;
+
+      document.getElementById('modal-title').textContent = file.name;
+      const body = document.getElementById('modal-body');
+
+      // Se há uma pesquisa activa, destaca as ocorrências no modal
+      const query = document.getElementById('query').value.trim();
+      if (query) {
+        const isRegex = document.getElementById('opt-regex').checked;
+        const useWholeWord = document.getElementById('opt-whole-word').checked;
+        const caseSensitive = document.getElementById('opt-case-sensitive').checked;
+        let patternStr = isRegex ? query : escapeRegExp(query);
+        if (useWholeWord) patternStr = '\\b' + patternStr + '\\b';
+        let flags = caseSensitive ? 'g' : 'gi';
+        let pattern;
+        try {
+          pattern = new RegExp(patternStr, flags);
+        } catch (e) {
+          body.textContent = file.content;
+          document.getElementById('modal-overlay').classList.add('visible');
+          return;
+        }
+        body.innerHTML = highlight(escapeHtml(file.content), pattern, true);
+      } else {
+        body.textContent = file.content;
+      }
+
+      document.getElementById('modal-overlay').classList.add('visible');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('visible');
+      currentModalFileId = null;
+    }
+
+    function copyContent() {
+      const file = files.find(f => f.id === currentModalFileId);
+      if (!file) return;
+      navigator.clipboard.writeText(file.content).then(() => {
+        const btn = document.querySelector('.modal-footer .btn-upload');
+        const original = btn.textContent;
+        btn.textContent = '✅ Copiado!';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      }).catch(() => {
+        alert('Não foi possível copiar.');
+      });
+    }
+
+    // ========== UTILS ==========
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[c]);
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function highlight(text, pattern, alreadyEscaped) {
+      // Se alreadyEscaped é true, o text já foi escapado para HTML
+      // Precisamos criar um regex que funcione no texto escapado
+      let searchPattern = pattern;
+      if (!alreadyEscaped) {
+        // highlight normal: aplica no texto bruto (que pode ter HTML)
+        // Primeiro escapa o texto, depois aplica o highlight
+        text = escapeHtml(text);
+      }
+
+      // No texto escapado, &lt; &gt; etc mudam as posições
+      // Simplificação: aplicamos o regex no texto já escapado
+      const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
+      const result = text.replace(re, (match) => {
+        return '<span class="highlight">' + match + '</span>';
+      });
+      return result;
+    }
+  </script>
+</body>
+</html>

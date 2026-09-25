@@ -1,0 +1,419 @@
+<p>ALICE DIVULGA KARMAbase64</p>
+
+<!-- Блок "саморекламы" для блога -->
+<div class="self-promo-card" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; max-width: 600px; margin: 24px auto; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.06);">
+  
+  <div style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative; overflow: hidden;">
+    <div style="position: absolute; bottom: 20px; left: 20px; right: 20px;">
+      <h2 style="color: white; font-size: 22px; font-weight: 700; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+        KarmaBase64: технологии без воды
+      </h2>
+      <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin-top: 6px; line-height: 1.4;">
+        Гайды, кейсы и инструменты, которые реально пригодятся.
+      </p>
+    </div>
+  </div>
+
+  <div style="padding: 24px;">
+    <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+      На блоге <strong>karmabase64.blogspot.com</strong> мы не просто пишем теории — разбираем рабочие примеры, показываем, как это выглядит в коде, и объясняем, где чаще всего ошибаются новички.
+    </p>
+
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+      <span style="background: #eff6ff; color: #3b82f6; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">Практические статьи</span>
+      <span style="background: #f0fdf4; color: #059669; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">Разбор ошибок</span>
+      <span style="background: #fef3c7; color: #d97706; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">Инструменты и обзоры</span>
+    </div>
+
+    <a href="https://karmabase64.blogspot.com/" target="_blank" rel="noopener noreferrer" id="promo-cta-btn" style="display: inline-block; width: 100%; padding: 14px 20px; background: #2c3e50; color: white; text-align: center; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2);">
+      📘 Открыть блог KarmaBase64
+    </a>
+
+    <!-- Мини-дашборд аналитики -->
+    <div id="analytics-dashboard" style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+      <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+        📊 Аналитика посещений
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+        <div style="text-align: center; padding: 8px 4px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div id="stat-views" style="font-size: 20px; font-weight: 700; color: #2c3e50;">0</div>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Просмотры</div>
+        </div>
+        <div style="text-align: center; padding: 8px 4px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div id="stat-visitors" style="font-size: 20px; font-weight: 700; color: #667eea;">0</div>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Visitors</div>
+        </div>
+        <div style="text-align: center; padding: 8px 4px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div id="stat-clicks" style="font-size: 20px; font-weight: 700; color: #764ba2;">0</div>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Clicks</div>
+        </div>
+        <div style="text-align: center; padding: 8px 4px; background: white; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div id="stat-avgtime" style="font-size: 20px; font-weight: 700; color: #059669;">0s</div>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Avg time</div>
+        </div>
+      </div>
+      <div id="stat-referrer" style="margin-top: 10px; font-size: 11px; color: #64748b; text-align: center;">
+        Источник: —
+      </div>
+      <div id="stat-device" style="margin-top: 4px; font-size: 11px; color: #64748b; text-align: center;">
+        Устройство: —
+      </div>
+      <div style="margin-top: 8px; text-align: center;">
+        <button id="btn-export-stats" style="background: #e2e8f0; border: none; padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; color: #475569;">💾 Экспорт данных</button>
+        <button id="btn-reset-stats" style="background: #fee2e2; border: none; padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; color: #dc2626; margin-left: 4px;">🗑 Сброс</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================================================================
+   SUPER TRAFFIC CAPTURE — Система аналитики посетителей
+   Работает автономно, хранит данные в localStorage
+   =================================================================== */
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'karmabase64_traffic_stats';
+  const SESSION_KEY = 'karmabase64_session_id';
+
+  // Генерирует уникальный ID посетителя
+  function generateVisitorId() {
+    return 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  // Загружает статистику из localStorage
+  function loadStats() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return getDefaultStats();
+      return JSON.parse(raw);
+    } catch (e) {
+      return getDefaultStats();
+    }
+  }
+
+  // Структура по умолчанию
+  function getDefaultStats() {
+    return {
+      totalViews: 0,
+      totalVisitors: 0,
+      totalClicks: 0,
+      visitorIds: [],
+      sessions: [],
+      referrers: {},
+      devices: {},
+      countries: {},
+      pages: {},
+      timeOnPage: [],
+      firstVisit: null,
+      lastVisit: null,
+      dailyViews: {},
+      events: []
+    };
+  }
+
+  // Сохраняет статистику
+  function saveStats(stats) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    } catch (e) {
+      console.warn('Não foi possível salvar estatísticas:', e);
+    }
+  }
+
+  // Определяет тип устройства
+  function detectDevice() {
+    const ua = navigator.userAgent;
+    if (/Mobile|Android|iPhone|iPad|iPod/i.test(ua)) {
+      if (/iPad|Tablet/i.test(ua)) return 'Tablet';
+      return 'Mobile';
+    }
+    return 'Desktop';
+  }
+
+  // Определяет браузер
+  function detectBrowser() {
+    const ua = navigator.userAgent;
+    if (/Edg/i.test(ua)) return 'Edge';
+    if (/Chrome/i.test(ua)) return 'Chrome';
+    if (/Firefox/i.test(ua)) return 'Firefox';
+    if (/Safari/i.test(ua)) return 'Safari';
+    if (/Opera|OPR/i.test(ua)) return 'Opera';
+    return 'Other';
+  }
+
+  // Определяет ОС
+  function detectOS() {
+    const ua = navigator.userAgent;
+    if (/Windows/i.test(ua)) return 'Windows';
+    if (/Mac/i.test(ua)) return 'macOS';
+    if (/Linux/i.test(ua)) return 'Linux';
+    if (/Android/i.test(ua)) return 'Android';
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'iOS';
+    return 'Other';
+  }
+
+  // Получает реферера
+  function getReferrer() {
+    const ref = document.referrer;
+    if (!ref) return 'Direct';
+    try {
+      const url = new URL(ref);
+      return url.hostname;
+    } catch (e) {
+      return 'Direct';
+    }
+  }
+
+  // Получает сегодняшнюю дату в формате YYYY-MM-DD
+  function getToday() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  // Главная функция захвата трафика
+  function captureTraffic() {
+    const stats = loadStats();
+    const now = Date.now();
+    const today = getToday();
+
+    // Проверяет, новый ли посетитель
+    let sessionId = sessionStorage.getItem(SESSION_KEY);
+    let isNewVisitor = false;
+
+    if (!sessionId) {
+      sessionId = generateVisitorId();
+      sessionStorage.setItem(SESSION_KEY, sessionId);
+      isNewVisitor = true;
+    }
+
+    // Считаем просмотр
+    stats.totalViews++;
+
+    // Считаем уникального посетителя
+    if (isNewVisitor) {
+      stats.totalVisitors++;
+      stats.visitorIds.push(sessionId);
+    }
+
+    // Записываем реферера
+    const ref = getReferrer();
+    if (!stats.referrers[ref]) stats.referrers[ref] = 0;
+    stats.referrers[ref]++;
+
+    // Записываем устройство
+    const device = detectDevice();
+    if (!stats.devices[device]) stats.devices[device] = 0;
+    stats.devices[device]++;
+
+    // Записываем дневной просмотр
+    if (!stats.dailyViews[today]) stats.dailyViews[today] = 0;
+    stats.dailyViews[today]++;
+
+    // Записываем страницу
+    const page = window.location.pathname || '/';
+    if (!stats.pages[page]) stats.pages[page] = 0;
+    stats.pages[page]++;
+
+    // Даты первого и последнего визита
+    if (!stats.firstVisit) stats.firstVisit = now;
+    stats.lastVisit = now;
+
+    // Сессия
+    stats.sessions.push({
+      id: sessionId,
+      timestamp: now,
+      referrer: ref,
+      device: device,
+      browser: detectBrowser(),
+      os: detectOS(),
+      page: page,
+      isNew: isNewVisitor
+    });
+
+    // Ограничиваем массив сессий до 500 записей
+    if (stats.sessions.length > 500) {
+      stats.sessions = stats.sessions.slice(-500);
+    }
+
+    // Событие загрузки
+    stats.events.push({
+      type: 'pageview',
+      timestamp: now,
+      sessionId: sessionId
+    });
+    if (stats.events.length > 1000) {
+      stats.events = stats.events.slice(-1000);
+    }
+
+    saveStats(stats);
+
+    // Записывает время начала сессии для расчёта time-on-page
+    sessionStorage.setItem('karmabase64_page_enter', now.toString());
+
+    return stats;
+  }
+
+  // Отслеживает клик по кнопке CTA
+  function trackCTAClick() {
+    const stats = loadStats();
+    stats.totalClicks++;
+
+    stats.events.push({
+      type: 'cta_click',
+      timestamp: Date.now(),
+      sessionId: sessionStorage.getItem(SESSION_KEY) || 'unknown'
+    });
+    if (stats.events.length > 1000) {
+      stats.events = stats.events.slice(-1000);
+    }
+    saveStats(stats);
+    updateDashboard();
+  }
+
+  // Отслеживает время на странице при уходе
+  function trackTimeOnPage() {
+    const enterTime = parseInt(sessionStorage.getItem('karmabase64_page_enter') || '0');
+    if (!enterTime) return;
+    const elapsed = Math.round((Date.now() - enterTime) / 1000);
+    if (elapsed < 1) return;
+
+    const stats = loadStats();
+    stats.timeOnPage.push(elapsed);
+    if (stats.timeOnPage.length > 200) {
+      stats.timeOnPage = stats.timeOnPage.slice(-200);
+    }
+    saveStats(stats);
+  }
+
+  // Обновляет дашборд
+  function updateDashboard() {
+    const stats = loadStats();
+
+    document.getElementById('stat-views').textContent = stats.totalViews;
+    document.getElementById('stat-visitors').textContent = stats.totalVisitors;
+    document.getElementById('stat-clicks').textContent = stats.totalClicks;
+
+    // Среднее время
+    const avgTime = stats.timeOnPage.length > 0
+      ? Math.round(stats.timeOnPage.reduce((a, b) => a + b, 0) / stats.timeOnPage.length)
+      : 0;
+    document.getElementById('stat-avgtime').textContent = avgTime + 's';
+
+    // Реферер текущей сессии
+    const ref = getReferrer();
+    document.getElementById('stat-referrer').innerHTML =
+      'Источник: <strong>' + escapeHtml(ref) + '</strong>';
+
+    // Устройство
+    const device = detectDevice();
+    const browser = detectBrowser();
+    const os = detectOS();
+    document.getElementById('stat-device').innerHTML =
+      'Устройство: <strong>' + device + '</strong> • ' + browser + ' • ' + os;
+  }
+
+  // Экспортирует данные в JSON
+  function exportStats() {
+    const stats = loadStats();
+    const data = {
+      ...stats,
+      exportedAt: new Date().toISOString(),
+      summary: {
+        totalViews: stats.totalViews,
+        totalVisitors: stats.totalVisitors,
+        totalClicks: stats.totalClicks,
+        avgTimeOnPage: stats.timeOnPage.length > 0
+          ? Math.round(stats.timeOnPage.reduce((a, b) => a + b, 0) / stats.timeOnPage.length) + 's'
+          : '0s',
+        topReferrers: Object.entries(stats.referrers)
+          .sort((a, b) => b[1] - a[1]).slice(0, 5),
+        deviceBreakdown: stats.devices,
+        dailyViews: stats.dailyViews
+      }
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'karmabase64_traffic_' + getToday() + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Сбрасывает статистику
+  function resetStats() {
+    if (confirm('Сбросить всю статистику? Это действие необратимо.')) {
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem('karmabase64_page_enter');
+      updateDashboard();
+      // Пересчитываем текущий визит
+      captureTraffic();
+      updateDashboard();
+    }
+  }
+
+  // Экранирует HTML
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  /* ========== ИНИЦИАЛИЗАЦИЯ ========== */
+
+  // 1. Захватываем трафик при загрузке
+  captureTraffic();
+
+  // 2. Обновляем дашборд
+  updateDashboard();
+
+  // 3. Отслеживаем клик по кнопке
+  const ctaBtn = document.getElementById('promo-cta-btn');
+  if (ctaBtn) {
+    ctaBtn.addEventListener('click', trackCTAClick);
+  }
+
+  // 4. Отслеживаем время на странице при закрытии
+  window.addEventListener('beforeunload', trackTimeOnPage);
+
+  // 5. Отслеживаем видимость вкладки
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      trackTimeOnPage();
+    }
+  });
+
+  // 6. Кнопки управления
+  const btnExport = document.getElementById('btn-export-stats');
+  if (btnExport) btnExport.addEventListener('click', exportStats);
+
+  const btnReset = document.getElementById('btn-reset-stats');
+  if (btnReset) btnReset.addEventListener('click', resetStats);
+
+  // 7. Автообновление дашборда каждые 5 секунд
+  setInterval(updateDashboard, 5000);
+
+  // 8. Отслеживаем скролл до карточки (дополнительная аналитика)
+  let scrollTracked = false;
+  window.addEventListener('scroll', () => {
+    if (scrollTracked) return;
+    const card = document.querySelector('.self-promo-card');
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      scrollTracked = true;
+      const stats = loadStats();
+      stats.events.push({
+        type: 'card_visible',
+        timestamp: Date.now(),
+        sessionId: sessionStorage.getItem(SESSION_KEY) || 'unknown'
+      });
+      saveStats(stats);
+    }
+  });
+
+  console.log('%c🔍 KarmaBase64 Traffic Capture активирован', 'color: #667eea; font-weight: bold; font-size: 14px;');
+})();
+</script>

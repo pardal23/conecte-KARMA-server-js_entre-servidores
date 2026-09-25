@@ -1,0 +1,161 @@
+<!-- Добавь это внутрь #ui-panel, перед .stat-box -->
+<div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+  <input 
+    type="url" 
+    id="server-url" 
+    placeholder="https://www.yandex.com/karma" 
+    style="padding: 8px 12px; border-radius: 6px; border: 1px solid #333; background: #111; color: #fff; width: 250px;"
+  />
+  <button id="connect-btn" style="padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">Connect</button>
+</div>
+
+<script>
+    // ==========================================
+    // ЧАСТЬ 1: МОК-СЕРВЕР (Имитация Backend)
+    // ==========================================
+    const mockServer = {
+      getKarmaData: () => {
+        return new Promise((resolve) => {
+          // Имитация задержки сети (от 0.3 до 0.8 сек)
+          const delay = Math.random() * 500 + 300; 
+          setTimeout(() => {
+            resolve({
+              karmaLevel: Math.floor(Math.random() * 100),
+              spiritCount: Math.floor(Math.random() * 200) + 50,
+              message: "Balance restored",
+              timestamp: new Date().toLocaleTimeString()
+            });
+          }, delay);
+        });
+      }
+    };
+
+    // Функция запроса к нашему "серверу"
+    async function fetchKarmaState() {
+      try {
+        const data = await mockServer.getKarmaData();
+        
+        document.getElementById('karma-level').innerText = data.karmaLevel;
+        document.getElementById('spirit-count').innerText = data.spiritCount;
+        document.getElementById('server-msg').innerText = `OK: ${data.message}`;
+        document.getElementById('server-msg').style.color = '#4ade80';
+        
+      } catch (error) {
+        document.getElementById('server-msg').innerText = "Connection Lost";
+        document.getElementById('server-msg').style.color = '#ef4444';
+      }
+    }
+
+    // Обновляем данные каждые 2 секунды
+    setInterval(fetchKarmaState, 2000);
+    fetchKarmaState(); // Первый запуск сразу
+
+
+    // ==========================================
+    // ЧАСТЬ 2: АНИМАЦИЯ (Canvas)
+    // ==========================================
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        // Случайное движение
+        this.vx = (Math.random() - 0.5) * 3;
+        this.vy = (Math.random() - 0.5) * 3;
+        
+        this.size = Math.random() * 4 + 1;
+        
+        // Цвета: фиолетовый, синий, белый (энергия кармы)
+        const hue = Math.random() * 60 + 190; 
+        this.color = `hsl(${hue}, 70%, 70%)`;
+        
+        this.alpha = Math.random();
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Отскок от стен
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+      }
+
+      draw() {
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1; // Сброс прозрачности для других объектов
+      }
+    }
+
+    const particles = [];
+    // Количество частиц зависит от размера экрана
+    const particleCount = Math.min(400, (width * height) / 2500); 
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+
+    function animate() {
+      // Рисуем темный фон с небольшим шлейфом (эффект послесвечения)
+      ctx.fillStyle = 'rgba(5, 5, 16, 0.15)';
+      ctx.fillRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+<script>
+// Замени mockServer на реальную логику fetch
+async function fetchKarmaState() {
+  const url = document.getElementById('server-url').value.trim();
+  
+  // Если URL не задан, можно оставить мок для демо
+  if (!url) {
+    return mockServer.getKarmaData().then(updateUI);
+  }
+
+  try {
+    const res = await fetch(url, { method: 'GET' });
+    if (!res.ok) throw new Error('Network error');
+    const data = await res.json();
+    updateUI(data);
+  } catch (error) {
+    document.getElementById('server-msg').innerText = "Connection Lost";
+    document.getElementById('server-msg').style.color = '#ef4444';
+  }
+}
+
+function updateUI(data) {
+  document.getElementById('karma-level').innerText = data.karmaLevel || '?';
+  document.getElementById('spirit-count').innerText = data.spiritCount || '?';
+  document.getElementById('server-msg').innerText = `OK: ${data.message || 'Data received'}`;
+  document.getElementById('server-msg').style.color = '#4ade80';
+}
+
+document.getElementById('connect-btn').addEventListener('click', fetchKarmaState);
+fetchKarmaState(); // Первый запуск
+</script>

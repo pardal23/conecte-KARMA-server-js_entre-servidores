@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pesquisa Profunda — GUI</title>
+<style>
+/* ==================== RESET ==================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px; color: #1a1a2e;
+  background: #0f0f1e; display: flex; flex-direction: column;
+}
+
+/* ==================== SCROLLBAR ==================== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: #3d3d5c; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #50507a; }
+
+/* ==================== HEADER ==================== */
+header {
+  background: linear-gradient(135deg, #16213e, #0f3460);
+  color: #e8e8f0; padding: 0.8rem 1.5rem;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 2px solid #0f3460; user-select: none;
+  flex-shrink: 0;
+}
+header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px; }
+header h1 span { color: #00d4ff; }
+.status-bar { display: flex; gap: 1rem; font-size: 0.82rem; align-items: center; }
+.status-bar .badge {
+  background: rgba(0,212,255,0.15); color: #00d4ff;
+  padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 600;
+  border: 1px solid rgba(0,212,255,0.3);
+}
+.status-bar .dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.3rem;
+}
+.dot.green { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+.dot.red { background: #e74c3c; box-shadow: 0 0 6px #e74c3c; }
+
+/* ==================== MAIN LAYOUT ==================== */
+.app-container { display: flex; flex: 1; overflow: hidden; }
+
+/* ==================== SIDEBAR ==================== */
+aside {
+  width: 280px; min-width: 180px;
+  background: #16213e; color: #c8c8d8;
+  display: flex; flex-direction: column;
+  flex-shrink: 0; border-right: 1px solid #0f3460;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 0.8rem 1rem; font-weight: 700; font-size: 0.9rem;
+  border-bottom: 1px solid #0f3460; display: flex;
+  justify-content: space-between; align-items: center;
+}
+.sidebar-header button {
+  background: #0f3460; border: none; color: #00d4ff;
+  border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 1rem;
+}
+.sidebar-header button:hover { background: #1a4a80; }
+
+#drop-zone {
+  border: 2px dashed #3d3d5c; padding: 1.5rem 0.8rem; text-align: center;
+  color: #6d6d8d; border-radius: 6px; margin: 0.8rem; cursor: pointer;
+  font-size: 0.85rem; line-height: 1.6; transition: all 0.2s;
+}
+#drop-zone:hover, #drop-zone.drag-over {
+  border-color: #00d4ff; color: #00d4ff; background: rgba(0,212,255,0.06);
+}
+#drop-zone .icon { font-size: 2rem; display: block; margin-bottom: 0.4rem; }
+
+#files-list { flex: 1; overflow-y: auto; padding: 0 0.4rem 0.4rem; }
+
+.file-item {
+  padding: 0.5rem 0.6rem; border-bottom: 1px solid #1a1a2e; cursor: pointer;
+  display: flex; flex-direction: column; gap: 0.15rem; border-radius: 4px;
+  transition: background 0.12s; position: relative;
+}
+.file-item:hover { background: rgba(0,212,255,0.08); }
+.file-item.active { background: rgba(0,212,255,0.15); }
+.file-item-row { display: flex; justify-content: space-between; align-items: center; }
+.file-item-name {
+  font-weight: 500; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 180px; font-size: 0.85rem;
+}
+.file-item-meta { font-size: 0.72rem; color: #6d6d8d; }
+.file-badge {
+  background: #e94560; color: white; font-size: 0.7rem;
+  padding: 1px 6px; border-radius: 8px; font-weight: 700;
+  min-width: 20px; text-align: center;
+}
+.file-badge.zero { background: #3d3d5c; color: #6d6d8d; }
+.file-remove {
+  position: absolute; right: 6px; top: 6px; opacity: 0;
+  background: #e74c3c; border: none; color: white;
+  width: 18px; height: 18px; border-radius: 50%;
+  cursor: pointer; font-size: 0.7rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center; transition: opacity 0.15s;
+}
+.file-item:hover .file-remove { opacity: 1; }
+
+/* ==================== RESIZER ==================== */
+.resizer {
+  width: 5px; cursor: col-resize; background: transparent;
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.resizer:hover, .resizer.dragging { background: #00d4ff; }
+
+/* ==================== MAIN CONTENT ==================== */
+main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f5f5fa; }
+
+/* ==================== SEARCH CONTROLS ==================== */
+.search-controls {
+  padding: 1rem 1.2rem; background: #16213e;
+  border-bottom: 1px solid #0f3460; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 0.8rem;
+}
+.search-row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+
+#query {
+  flex: 1; min-width: 200px; padding: 0.7rem 1rem;
+  border: 1px solid #0f3460; border-radius: 6px;
+  background: #0f0f1e; color: #e8e8f0; font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#query:focus {
+  outline: none; border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0,212,255,0.15);
+}
+#query::placeholder { color: #6d6d8d; }
+
+button {
+  border: none; cursor: pointer; border-radius: 6px;
+  font-weight: 600; font-size: 0.9rem; transition: all 0.15s;
+}
+button.primary {
+  background: #00d4ff; color: #0f0f1e;
+  padding: 0.7rem 1.5rem; font-weight: 700;
+}
+button.primary:hover { background: #00b8d9; box-shadow: 0 2px 8px rgba(0,212,255,0.3); }
+button.secondary {
+  background: #0f3460; color: #c8c8d8;
+  padding: 0.7rem 1rem;
+}
+button.secondary:hover { background: #1a4a80; color: white; }
+button.small {
+  padding: 0.3rem 0.6rem; font-size: 0.78rem;
+  background: #0f3460; color: #c8c8d8; border-radius: 4px;
+}
+button.small:hover { background: #1a4a80; color: white; }
+button.small.active { background: #00d4ff; color: #0f0f1e; }
+
+.options-row {
+  display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+}
+.option-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.85rem; color: #c8c8d8; cursor: pointer;
+  padding: 0.25rem 0.5rem; border-radius: 4px;
+  transition: background 0.12s; user-select: none;
+}
+.option-chip:hover { background: rgba(0,212,255,0.08); }
+.option-chip input { accent-color: #00d4ff; cursor: pointer; }
+
+.search-meta {
+  display: flex; gap: 0.8rem; align-items: center; font-size: 0.8rem; color: #8d8dad;
+}
+.search-meta select {
+  background: #0f0f1e; color: #c8c8d8; border: 1px solid #0f3460;
+  border-radius: 4px; padding: 0.2rem 0.4rem; font-size: 0.8rem;
+}
+
+/* ==================== RESULTS AREA ==================== */
+#results-area {
+  flex: 1; overflow-y: auto; padding: 1.2rem 1.5rem;
+  background: #f5f5fa;
+}
+.results-info {
+  margin-bottom: 1rem; font-size: 0.85rem; color: #666;
+  display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;
+}
+.results-info b { color: #0f3460; }
+
+.result-card {
+  border: 1px solid #e0e0ea; border-radius: 8px;
+  padding: 1rem 1.2rem; margin-bottom: 1rem; background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: box-shadow 0.15s;
+}
+.result-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+.result-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;
+}
+.result-title {
+  font-size: 1rem; font-weight: 700; color: #0f3460;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.result-actions { display: flex; gap: 0.5rem; align-items: center; }
+.result-stats { font-size: 0.82rem; color: #888; }
+.relevance-bar {
+  width: 80px; height: 5px; background: #eee; border-radius: 3px; overflow: hidden;
+}
+.relevance-fill {
+  height: 100%; background: linear-gradient(90deg, #e94560, #f39c12, #2ecc71);
+  border-radius: 3px; transition: width 0.3s;
+}
+
+.open-link {
+  color: #00a0cc; cursor: pointer; text-decoration: none;
+  font-weight: 600; font-size: 0.85rem; display: inline-flex;
+  align-items: center; gap: 0.3rem; padding: 0.25rem 0.5rem;
+  border-radius: 4px; border: 1px solid #e0e0ea; background: #f9f9ff;
+  transition: all 0.15s;
+}
+.open-link:hover { background: #00d4ff; color: white; border-color: #00d4ff; }
+
+.snippet-block {
+  margin-top: 0.6rem; padding: 0.7rem 0.9rem;
+  background: #f9f9fc; border-radius: 5px;
+  border-left: 3px solid #00d4ff;
+  line-height: 1.7; color: #333; font-size: 0.88rem;
+  white-space: pre-wrap; word-break: break-word;
+  position: relative;
+}
+.snippet-num {
+  position: absolute; top: 0.5rem; right: 0.7rem;
+  font-size: 0.7rem; color: #aaa; font-weight: 700;
+}
+.snippet-pos {
+  font-size: 0.72rem; color: #999; margin-bottom: 0.3rem;
+  display: block;
+}
+.hl {
+  background: #fff3a0; color: #1a1a2e; font-weight: 700;
+  padding: 0.05em 0.2em; border-radius: 2px;
+  border-bottom: 2px solid #f39c12;
+}
+.hl-2 {
+  background: #ffd6d6; color: #1a1a2e; font-weight: 700;
+  padding: 0.05em 0.2em; border-radius: 2px;
+}
+.no-results {
+  text-align: center; padding: 3rem 1rem; color: #999;
+}
+.no-results .icon { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.4; }
+.no-results p { font-size: 1rem; margin-bottom: 0.4rem; }
+.no-results small { font-size: 0.85rem; color: #aaa; }
+
+/* ==================== MODAL ==================== */
+#modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 1000;
+  display: none; justify-content: center; align-items: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+#modal-overlay.visible { display: flex; opacity: 1; }
+
+#modal-window {
+  background: white; width: 90%; max-width: 900px; height: 85vh;
+  border-radius: 8px; display: flex; flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3); overflow: hidden;
+}
+
+.modal-header {
+  padding: 0.8rem 1.2rem; background: #16213e; color: #e8e8f0;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 2px solid #0f3460; flex-shrink: 0;
+}
+.modal-title { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
+.modal-toolbar { display: flex; gap: 0.5rem; align-items: center; }
+.modal-toolbar button {
+  background: #0f3460; color: #c8c8d8; border: none;
+  padding: 0.35rem 0.7rem; border-radius: 4px; cursor: pointer;
+  font-size: 0.82rem; font-weight: 600;
+}
+.modal-toolbar button:hover { background: #1a4a80; color: white; }
+.modal-toolbar button.close { background: #e94560; color: white; padding: 0.35rem 0.6rem; }
+.modal-toolbar button.close:hover { background: #c73650; }
+
+.modal-body {
+  flex: 1; overflow-y: auto; padding: 1.2rem 1.5rem;
+  font-family: "SF Mono", "Cascadia Code", "Courier New", monospace;
+  font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;
+  word-break: break-word; color: #1a1a2e; background: #fafafa;
+}
+
+.modal-nav {
+  padding: 0.5rem 1.2rem; background: #f0f0f5;
+  border-top: 1px solid #e0e0ea; display: flex;
+  justify-content: space-between; align-items: center;
+  font-size: 0.82rem; color: #666; flex-shrink: 0;
+}
+.modal-nav button {
+  background: #16213e; color: #e8e8f0; border: none;
+  padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer;
+  font-size: 0.8rem; font-weight: 600;
+}
+.modal-nav button:hover { background: #0f3460; }
+.modal-nav button:disabled { opacity: 0.4; cursor: default; }
+.modal-nav .nav-info { font-weight: 600; color: #333; }
+
+/* ==================== TOAST ==================== */
+#toast {
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+  background: #16213e; color: #00d4ff; padding: 0.7rem 1.5rem;
+  border-radius: 6px; font-weight: 600; font-size: 0.9rem;
+  z-index: 2000; opacity: 0; transition: opacity 0.3s, bottom 0.3s;
+  border: 1px solid #0f3460; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+#toast.visible { opacity: 1; bottom: 2.5rem; }
+
+/* ==================== HELP MODAL ==================== */
+#help-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 1500;
+  display: none; justify-content: center; align-items: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+#help-overlay.visible { display: flex; opacity: 1; }
+#help-window {
+  background: #16213e; color: #c8c8d8; width: 90%; max-width: 600px;
+  max-height: 80vh; border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column; border: 1px solid #0f3460;
+}
+.help-header {
+  padding: 1rem 1.2rem; font-weight: 700; font-size: 1rem;
+  border-bottom: 1px solid #0f3460; display: flex;
+  justify-content: space-between; align-items: center; color: #00d4ff;
+}
+.help-body { padding: 1.2rem; overflow-y: auto; line-height: 1.8; font-size: 0.88rem; }
+.help-body h3 { color: #00d4ff; margin: 0.8rem 0 0.3rem; font-size: 0.95rem; }
+.help-body code {
+  background: #0f0f1e; padding: 0.1em 0.4em; border-radius: 3px;
+  color: #f39c12; font-family: monospace; font-size: 0.85em;
+}
+.help-body .kbd {
+  background: #0f3460; padding: 0.15em 0.5em; border-radius: 4px;
+  font-family: monospace; font-size: 0.82em; color: #00d4ff;
+  border: 1px solid #1a4a80;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔍 Pesquisa <span>Profunda</span></h1>
+  <div class="status-bar">
+    <span><span class="dot green" id="status-dot"></span> Pronto</span>
+    <span class="badge" id="status-badge">0 ficheiros</span>
+    <button class="small" onclick="toggleHelp()">? Ajuda</button>
+  </div>
+</header>
+
+<div class="app-container">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      Ficheiros
+      <button onclick="clearAllFiles()" title="Limpar tudo">🗑</button>
+    </div>
+    <div id="drop-zone">
+      <span class="icon">📁</span>
+      Arraste ficheiros aqui<br>ou clique para selecionar
+    </div>
+    <div id="files-list"></div>
+  </aside>
+
+  <div class="resizer" id="resizer"></div>
+
+  <main>
+    <div class="search-controls">
+      <div class="search-row">
+        <input type="text" id="query" placeholder="Digite a consulta (palavra, frase, regex...)" />
+        <button class="primary" onclick="performSearch()">🔍 Pesquisar</button>
+        <button class="secondary" onclick="clearSearch()">✖ Limpar</button>
+      </div>
+      <div class="options-row">
+        <label class="option-chip"><input type="checkbox" id="opt-case" /> Case-sensitive (Aa)</label>
+        <label class="option-chip"><input type="checkbox" id="opt-whole" /> Palavra inteira</label>
+        <label class="option-chip"><input type="checkbox" id="opt-regex" /> Regex</label>
+        <label class="option-chip"><input type="checkbox" id="opt-fuzzy" /> Fuzzy (≈)</label>
+        <div class="search-meta">
+          <label>Contexto:
+            <select id="ctx-size">
+              <option value="50">Curto</option>
+              <option value="120" selected>Médio</option>
+              <option value="250">Longo</option>
+              <option value="500">Completo</option>
+            </select>
+          </label>
+          <label>Snippets:
+            <select id="max-snippets">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="999">Todos</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="file-input" multiple style="display:none" />
+
+    <div id="results-area">
+      <div class="no-results">
+        <span class="icon">📂</span>
+        <p>Carregue ficheiros e faça uma pesquisa</p>
+        <small>Arraste ficheiros para a barra lateral ou clique na zona tracejada</small>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- File Viewer Modal -->
+<div id="modal-overlay">
+  <div id="modal-window">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">📄 Ficheiro</span>
+      <div class="modal-toolbar">
+        <button onclick="exportCurrentFile()">💾 Exportar</button>
+        <button onclick="copyModalContent()">📋 Copiar</button>
+        <button class="close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-nav">
+      <button onclick="modalPrevMatch()" id="btn-prev">← Anterior</button>
+      <span class="nav-info" id="nav-info">0 / 0 ocorrências</span>
+      <button onclick="modalNextMatch()" id="btn-next">Próxima →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div id="help-overlay">
+  <div id="help-window">
+    <div class="help-header">
+      <span>Como usar a Pesquisa Profunda</span>
+      <button class="small" onclick="toggleHelp()">✕</button>
+    </div>
+    <div class="help-body">
+      <h3>Carregar ficheiros</h3>
+      Arraste ficheiros de texto (.txt, .md, .html, .csv, .json, .log, .py, .js, .css, .xml, etc.) para a barra lateral, ou clique na zona tracejada.
+
+      <h3>Pesquisa simples</h3>
+      Digite uma palavra ou frase. Por omissão, a pesquisa ignora maiúsculas/minúsculas.
+
+      <h3>Opções de pesquisa</h3>
+      <strong>Case-sensitive (Aa)</strong> — distingue maiúsculas de minúsculas.<br>
+      <strong>Palavra inteira</strong> — só encontra correspondências isoladas (<code>\\bword\\b</code>).<br>
+      <strong>Regex</strong> — usa expressões regulares. Ex.: <code>erro\\s+\\d{3}</code>, <code>[A-Z]{2,4}-\\d{4}</code>.<br>
+      <strong>Fuzzy (≈)</strong> — encontra palavras parecidas (Levenshtein). Tolerância de 1 erro por cada 4 caracteres.
+
+      <h3>Resultados</h3>
+      Cada resultado mostra até N trechos com contexto. Clique em <strong>🔗 Abrir</strong> para ver o ficheiro completo com todas as ocorrências destacadas.
+
+      <h3>Atalhos de teclado</h3>
+      <span class="kbd">Enter</span> — pesquisar<br>
+      <span class="kbd">Esc</span> — fechar janela<br>
+      <span class="kbd">Ctrl+E</span> — exportar resultados em CSV<br>
+      <span class="kbd">Ctrl+F</span> — focar a caixa de pesquisa
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===================================================================
+   PESQUISA PROFUNDA — Motor de busca completo em JavaScript puro
+   Funcionalidades:
+   - Pesquisa simples, case-sensitive, palavra inteira, regex, fuzzy
+   - Snippets com contexto ajustável
+   - Navegação entre ocorrências no modal
+   - Exportação CSV
+   - Drag & drop de ficheiros
+   - Painel redimensionável
+   =================================================================== */
+
+const files = [];          // { id, name, content, size }
+let lastPattern = null;    // último padrão de pesquisa (RegExp)
+let lastQuery = '';        // última consulta em texto
+let modalFileId = null;    // ficheiro aberto no modal
+let modalMatchPositions = []; // posições das ocorrências no modal
+let modalCurrentIdx = -1;
+
+/* ==================== INIT ==================== */
+const fileInput = document.getElementById('file-input');
+const dropZone = document.getElementById('drop-zone');
+const resizer = document.getElementById('resizer');
+
+fileInput.addEventListener('change', e => { handleFiles(e.target.files); e.target.value=''; });
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+
+// Redimensionamento da barra lateral
+let isResizing = false;
+resizer.addEventListener('mousedown', e => {
+  isResizing = true;
+  resizer.classList.add('dragging');
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+document.addEventListener('mousemove', e => {
+  if (!isResizing) return;
+  const sidebar = document.getElementById('sidebar');
+  const newWidth = Math.max(180, Math.min(500, e.clientX));
+  sidebar.style.width = newWidth + 'px';
+  // callback após redimensionamento
+  afterResizing();
+});
+document.addEventListener('mouseup', () => {
+  if (isResizing) {
+    isResizing = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    afterResizing();
+  }
+});
+
+// Callback executado após redimensionar painel
+function afterResizing() {
+  // Reajusta scroll do modal se aberto
+  const modalBody = document.getElementById('modal-body');
+  if (modalBody && document.getElementById('modal-overlay').classList.contains('visible')) {
+    scrollToCurrentMatch();
+  }
+}
+
+// Atalhos de teclado
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('help-overlay').classList.contains('visible')) {
+      toggleHelp();
+    } else if (document.getElementById('modal-overlay').classList.contains('visible')) {
+      closeModal();
+    }
+  }
+  if (e.ctrlKey && e.key === 'e') { e.preventDefault(); exportCSV(); }
+  if (e.ctrlKey && e.key === 'f') { e.preventDefault(); document.getElementById('query').focus(); }
+});
+
+// Enter no campo de pesquisa
+document.getElementById('query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') performSearch();
+});
+
+/* ==================== FILE HANDLING ==================== */
+function handleFiles(fileList) {
+  let loaded = 0;
+  for (let i = 0; i < fileList.length; i++) {
+    const f = fileList[i];
+    const reader = new FileReader();
+    reader.onload = ev => {
+      files.push({
+        id: Date.now() + i + Math.random(),
+        name: f.name,
+        content: ev.target.result,
+        size: f.size
+      });
+      loaded++;
+      updateStats();
+      renderFilesList();
+      if (loaded === fileList.length) showToast(`✅ ${loaded} ficheiro(s) carregado(s)`);
+    };
+    reader.onerror = () => showToast('❌ Erro ao ler: ' + f.name);
+    reader.readAsText(f, 'utf-8');
+  }
+}
+
+function updateStats() {
+  document.getElementById('status-badge').textContent = `${files.length} ficheiro${files.length!==1?'s':''}`;
+}
+
+function renderFilesList() {
+  const list = document.getElementById('files-list');
+  list.innerHTML = '';
+  files.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.dataset.id = f.id;
+    div.onclick = () => openFileInModal(f.id);
+    div.innerHTML = `
+      <div class="file-item-row">
+        <span class="file-item-name">📄 ${escapeHtml(f.name)}</span>
+        <span class="file-badge zero" id="badge-${f.id}">0</span>
+      </div>
+      <div class="file-item-meta">${formatSize(f.size)} • ${f.content.length} caracteres</div>
+      <button class="file-remove" onclick="event.stopPropagation();removeFile(${f.id})">✕</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function removeFile(id) {
+  const idx = files.findIndex(f => f.id == id);
+  if (idx >= 0) { files.splice(idx, 1); updateStats(); renderFilesList(); }
+}
+
+function clearAllFiles() {
+  if (files.length === 0) return;
+  files.length = 0;
+  updateStats(); renderFilesList();
+  document.getElementById('results-area').innerHTML = `
+    <div class="no-results">
+      <span class="icon">📂</span>
+      <p>Todos os ficheiros removidos</p>
+    </div>`;
+  showToast('🗑 Ficheiros removidos');
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+/* ==================== SEARCH ENGINE ==================== */
+function buildPattern(query) {
+  const caseSensitive = document.getElementById('opt-case').checked;
+  const wholeWord = document.getElementById('opt-whole').checked;
+  const isRegex = document.getElementById('opt-regex').checked;
+  const flags = caseSensitive ? 'g' : 'gi';
+
+  let src;
+  if (isRegex) {
+    src = query;
+  } else {
+    src = escapeRegExp(query);
+    if (wholeWord) src = '\\b' + src + '\\b';
+  }
+  return new RegExp(src, flags);
+}
+
+/* Distância de Levenshtein para fuzzy search */
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i-1].toLowerCase() === b[j-1].toLowerCase() ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[m][n];
+}
+
+/* Fuzzy search: tokeniza o conteúdo e encontra palavras parecidas */
+function fuzzySearch(content, query, maxDist) {
+  const tokens = content.split(/(\s+)/);
+  const matches = [];
+  let pos = 0;
+  for (let t = 0; t < tokens.length; t++) {
+    const token = tokens[t];
+    const cleanToken = token.replace(/^[^\wà-úÀ-Ú]+|[^\wà-úÀ-Ú]+$/g, '');
+    if (cleanToken.length === 0) { pos += token.length; continue; }
+    const dist = levenshtein(cleanToken, query);
+    if (dist <= maxDist && cleanToken.length >= 2) {
+      matches.push({ index: pos, match: token });
+    }
+    pos += token.length;
+  }
+  return matches;
+}
+
+function performSearch() {
+  const query = document.getElementById('query').value.trim();
+  const resultsArea = document.getElementById('results-area');
+
+  if (!query) { showToast('⚠ Escreva uma consulta'); return; }
+  if (files.length === 0) { showToast('⚠ Carregue ficheiros primeiro'); return; }
+
+  const fuzzy = document.getElementById('opt-fuzzy').checked;
+  const isRegex = document.getElementById('opt-regex').checked;
+  const ctxSize = parseInt(document.getElementById('ctx-size').value);
+  const maxSnippets = parseInt(document.getElementById('max-snippets').value);
+
+  let pattern = null;
+  let fuzzyMaxDist = 0;
+
+  if (fuzzy && !isRegex) {
+    // Fuzzy: tolerância = 1 erro por cada 4 caracteres (min 1)
+    fuzzyMaxDist = Math.max(1, Math.floor(query.length / 4));
+  } else {
+    try {
+      pattern = buildPattern(query);
+    } catch (e) {
+      resultsArea.innerHTML = `<div class="no-results"><p>❌ Erro no regex: ${escapeHtml(e.message)}</p></div>`;
+      return;
+    }
+  }
+
+  lastPattern = pattern;
+  lastQuery = query;
+
+  const allResults = [];
+  let totalMatches = 0;
+  const startTime = performance.now();
+
+  files.forEach(file => {
+    // Reset badge
+    const badge = document.getElementById('badge-' + file.id);
+    if (badge) { badge.textContent = '0'; badge.classList.add('zero'); }
+
+    let matchPositions = [];
+
+    if (fuzzy && !isRegex) {
+      matchPositions = fuzzySearch(file.content, query, fuzzyMaxDist);
+    } else {
+      const re = new RegExp(pattern.source, pattern.flags);
+      let m;
+      while ((m = re.exec(file.content)) !== null) {
+        matchPositions.push({ index: m.index, match: m[0] });
+        if (m.index === re.lastIndex) re.lastIndex++;
+      }
+    }
+
+    if (matchPositions.length > 0) {
+      totalMatches += matchPositions.length;
+      const snippets = [];
+      for (let i = 0; i < matchPositions.length && snippets.length < maxSnippets; i++) {
+        const mp = matchPositions[i];
+        const start = Math.max(0, mp.index - ctxSize);
+        const end = Math.min(file.content.length, mp.index + mp.match.length + ctxSize);
+        let snippet = file.content.substring(start, end).replace(/\n{2,}/g, '\n').replace(/\n/g, ' ');
+        if (start > 0) snippet = '...' + snippet;
+        if (end < file.content.length) snippet += '...';
+        snippets.push({ pos: mp.index, match: mp.match, text: snippet });
+      }
+      allResults.push({ file, count: matchPositions.length, snippets, totalPositions: matchPositions });
+      if (badge) { badge.textContent = matchPositions.length; badge.classList.remove('zero'); }
+    }
+  });
+
+  allResults.sort((a, b) => b.count - a.count);
+  const elapsed = (performance.now() - startTime).toFixed(0);
+
+  // Renderizar resultados
+  if (allResults.length === 0) {
+    resultsArea.innerHTML = `
+      <div class="no-results">
+        <span class="icon">🔍</span>
+        <p>Nenhum resultado para "${escapeHtml(query)}"</p>
+        <small>${files.length} ficheiro(s) pesquisado(s) em ${elapsed}ms</small>
+      </div>`;
+  } else {
+    const maxCount = allResults[0].count;
+    let html = `
+      <div class="results-info">
+        <span><b>${allResults.length}</b> ficheiro(s) com resultados</span>
+        <span><b>${totalMatches}</b> ocorrência(s) total(is)</span>
+        <span>⏱ ${elapsed}ms</span>
+        <button class="small" onclick="exportCSV()">💾 Exportar CSV</button>
+      </div>`;
+
+    allResults.forEach((r, ri) => {
+      const relevance = Math.round((r.count / maxCount) * 100);
+      let snippetsHtml = '';
+      r.snippets.forEach((s, si) => {
+        snippetsHtml += `
+          <div class="snippet-block">
+            <span class="snippet-num">#${si+1}</span>
+            <span class="snippet-pos">📍 Posição: ${s.pos} • Match: "${escapeHtml(s.match)}"</span>
+            ${highlightText(s.text, s.match)}
+          </div>`;
+      });
+      let extra = '';
+      if (r.count > maxSnippets) {
+        extra = `<div style="margin-top:0.5rem;color:#888;font-size:0.82rem;">
+          +${r.count - maxSnippets} ocorrência(s) — clique em Abrir para ver todas</div>`;
+      }
+      html += `
+        <div class="result-card">
+          <div class="result-header">
+            <span class="result-title">📄 ${escapeHtml(r.file.name)}</span>
+            <div class="result-actions">
+              <div class="relevance-bar"><div class="relevance-fill" style="width:${relevance}%"></div></div>
+              <span class="result-stats">${r.count} ocorrência(s) • ${relevance}% relevância</span>
+            </div>
+          </div>
+          <div style="margin-top:0.3rem;">
+            <a class="open-link" onclick="openFileInModal(${r.file.id})">🔗 Abrir ficheiro completo</a>
+          </div>
+          ${snippetsHtml}
+          ${extra}
+        </div>`;
+    });
+    resultsArea.innerHTML = html;
+  }
+
+  showToast(`✅ ${totalMatches} ocorrência(s) em ${allResults.length} ficheiro(s)`);
+}
+
+function clearSearch() {
+  document.getElementById('query').value = '';
+  document.getElementById('results-area').innerHTML = `
+    <div class="no-results">
+      <span class="icon">📂</span>
+      <p>Pesquisa limpa</p>
+      <small>Digite uma nova consulta</small>
+    </div>`;
+  lastPattern = null;
+  lastQuery = '';
+  files.forEach(f => {
+    const b = document.getElementById('badge-' + f.id);
+    if (b) { b.textContent = '0'; b.classList.add('zero'); }
+  });
+}
+
+/* ==================== HIGHLIGHTING ==================== */
+function highlightText(text, matchStr) {
+  // Escapa HTML primeiro
+  let safe = escapeHtml(text);
+  // Escapa matchStr para regex
+  const escapedMatch = escapeRegExp(matchStr);
+  // Usa regex case-insensitive no texto escapado
+  try {
+    const re = new RegExp(escapedMatch, 'gi');
+    return safe.replace(re, m => `<span class="hl">${m}</span>`);
+  } catch {
+    return safe;
+  }
+}
+
+function highlightFullContent(content, pattern) {
+  let safe = escapeHtml(content);
+  if (!pattern) return safe;
+  const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
+  return safe.replace(re, m => `<span class="hl">${m}</span>`);
+}
+
+/* ==================== MODAL ==================== */
+function openFileInModal(fileId) {
+  const file = files.find(f => f.id == fileId);
+  if (!file) return;
+  modalFileId = file.id;
+
+  document.getElementById('modal-title').innerHTML = '📄 ' + escapeHtml(file.name);
+  const body = document.getElementById('modal-body');
+
+  // Recolhe posições das ocorrências
+  modalMatchPositions = [];
+  if (lastPattern) {
+    const re = new RegExp(lastPattern.source, lastPattern.flags.includes('g') ? lastPattern.flags : lastPattern.flags + 'g');
+    let m;
+    while ((m = re.exec(file.content)) !== null) {
+      modalMatchPositions.push({ index: m.index, match: m[0] });
+      if (m.index === re.lastIndex) re.lastIndex++;
+    }
+  }
+
+  // Renderiza conteúdo com destaque
+  body.innerHTML = highlightFullContent(file.content, lastPattern);
+
+  // Marca cada ocorrência com um span com id para navegação
+  let html = body.innerHTML;
+  // Substitui cada <span class="hl"> por <span class="hl" id="match-N">
+  let counter = 0;
+  html = html.replace(/<span class="hl">/g, () => {
+    return `<span class="hl" id="modal-match-${counter++}">`;
+  });
+  body.innerHTML = html;
+
+  modalCurrentIdx = -1;
+  updateModalNav();
+
+  document.getElementById('modal-overlay').classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('visible');
+  modalFileId = null;
+  modalMatchPositions = [];
+  modalCurrentIdx = -1;
+}
+
+function modalNextMatch() {
+  if (modalMatchPositions.length === 0) return;
+  modalCurrentIdx = (modalCurrentIdx + 1) % modalMatchPositions.length;
+  scrollToCurrentMatch();
+  updateModalNav();
+}
+
+function modalPrevMatch() {
+  if (modalMatchPositions.length === 0) return;
+  modalCurrentIdx = (modalCurrentIdx - 1 + modalMatchPositions.length) % modalMatchPositions.length;
+  scrollToCurrentMatch();
+  updateModalNav();
+}
+
+function scrollToCurrentMatch() {
+  const el = document.getElementById('modal-match-' + modalCurrentIdx);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Pisca o highlight
+    el.classList.add('hl-2');
+    setTimeout(() => {
+      const e2 = document.getElementById('modal-match-' + modalCurrentIdx);
+      if (e2) e2.classList.remove('hl-2');
+    }, 800);
+  }
+}
+
+function updateModalNav() {
+  const info = document.getElementById('nav-info');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  if (modalMatchPositions.length === 0) {
+    info.textContent = '0 / 0 ocorrências';
+    btnPrev.disabled = true;
+    btnNext.disabled = true;
+  } else {
+    info.textContent = `${modalCurrentIdx + 1} / ${modalMatchPositions.length} ocorrências`;
+    btnPrev.disabled = false;
+    btnNext.disabled = false;
+  }
+}
+
+function copyModalContent() {
+  const file = files.find(f => f.id == modalFileId);
+  if (!file) return;
+  navigator.clipboard.writeText(file.content).then(() => {
+    showToast('📋 Conteúdo copiado');
+  }).catch(() => showToast('❌ Erro ao copiar'));
+}
+
+function exportCurrentFile() {
+  const file = files.find(f => f.id == modalFileId);
+  if (!file) return;
+  const blob = new Blob([file.content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 Ficheiro exportado');
+}
+
+/* ==================== EXPORT CSV ==================== */
+function exportCSV() {
+  if (!lastPattern || files.length === 0) {
+    showToast('⚠ Faça uma pesquisa primeiro');
+    return;
+  }
+  let csv = 'Ficheiro;Ocorrencias;Posicao;Match;Contexto\n';
+  files.forEach(file => {
+    const re = new RegExp(lastPattern.source, lastPattern.flags.includes('g') ? lastPattern.flags : lastPattern.flags + 'g');
+    let m;
+    while ((m = re.exec(file.content)) !== null) {
+      const start = Math.max(0, m.index - 40);
+      const end = Math.min(file.content.length, m.index + m[0].length + 40);
+      let ctx = file.content.substring(start, end).replace(/;/g, ',').replace(/\n/g, ' ');
+      csv += `"${file.name}";1;${m.index};"${m[0]}";"${ctx}"\n`;
+      if (m.index === re.lastIndex) re.lastIndex++;
+    }
+  });
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'resultados_pesquisa.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 CSV exportado');
+}
+
+/* ==================== HELP ==================== */
+function toggleHelp() {
+  const h = document.getElementById('help-overlay');
+  h.classList.toggle('visible');
+}
+
+/* ==================== TOAST ==================== */
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 2500);
+}
+
+/* ==================== UTILS ==================== */
+function escapeHtml(text) {
+  return text.replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[c]);
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+</script>
+</body>
+</html>
